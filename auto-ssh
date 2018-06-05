@@ -1,0 +1,46 @@
+#!/usr/bin/expect -- 
+
+set timeout 3
+set default_user "<username>"
+set default_host "<hostname>"
+
+######################################################################
+
+set user $default_user
+set host $default_host
+set password ""
+set ssh_args {}
+
+for { set i 0 } { $i<$argc } { incr i } {
+  if { [lindex $argv $i] == "-U"
+       || [lindex $argv $i] == "--user" } {
+    incr i
+    set user [lindex $argv $i]
+  } elseif { [lindex $argv $i] == "-P"
+       || [lindex $argv $i] == "--password" } {
+    incr i
+    set password [lindex $argv $i]
+  } elseif { [lindex $argv $i] == "-H"
+      || [lindex $argv $i] == "--host" } {
+    incr i
+    set host [lindex $argv $i]
+  } else {
+    lappend ssh_args [lindex $argv $i]
+  }
+}
+
+spawn ssh {*}$ssh_args $user@$host
+
+if { $password != "" && $user != $default_user } {
+  expect {
+    timeout {
+      send_user "\nwarn: password not required\n"
+    }
+    "password:" {
+      send_user "\nwarn: not recomended to enter the password as an argument\n"
+      send "$password\n"
+    }
+  }
+}
+
+interact
